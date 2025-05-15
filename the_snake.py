@@ -40,7 +40,7 @@ clock = pygame.time.Clock()
 
 # Переменная для цикла While
 
-# Тут опишите все классы игры.
+
 
 
 class GameObject:
@@ -60,7 +60,6 @@ class GameObject:
         """Отрисовывает объект на экране.
         Должен быть переопределен в дочерних классах.
         """
-        pass
 
 
 class Apple(GameObject):
@@ -76,10 +75,12 @@ class Apple(GameObject):
         (наследуется от GameObject).
     """
 
-    def __init__(self):
+    def __init__(self, snake = None):
         super().__init__()
         self.body_color = APPLE_COLOR
+        self.snake = snake
         self.randomize_position()
+
 
     def draw(self):
         """Отрисовывает яблоко на игровом экране.
@@ -111,6 +112,9 @@ class Apple(GameObject):
             (randint(0, (SCREEN_WIDTH - GRID_SIZE) // 20) * GRID_SIZE),
             (randint(0, (SCREEN_HEIGHT - GRID_SIZE) // 20) * GRID_SIZE)
         )
+        if self.snake:  
+            while self.position in self.snake.positions:
+                self.randomize_position()
 
 
 class Snake(GameObject):
@@ -134,7 +138,7 @@ class Snake(GameObject):
         apple (Apple): Ссылка на объект яблока для проверки столкновений.
     """
 
-    def __init__(self, apple=None):
+    def __init__(self):
         super().__init__()
         self.length = 1
         self.positions = [(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)]
@@ -142,7 +146,8 @@ class Snake(GameObject):
         self.next_direction = None
         self.body_color = (0, 255, 0)
         self.last = None
-        self.apple = apple
+        
+        
 
     def update_direction(self):
         """Обновляет текущее направление движения змейки.
@@ -191,12 +196,7 @@ class Snake(GameObject):
     def handle_apple_collision(self):
         """Обрабатывает поедание яблока."""
         self.length += 1
-        self.generate_new_apple_position()
-
-    def generate_new_apple_position(self):
-        """Генерирует новую позицию яблока, избегая тела змейки."""
-        while self.apple.position in self.positions:
-            self.apple.randomize_position()
+        self.apple.randomize_position()
 
     def trim_tail_if_needed(self):
         """Удаляет хвостовой сегмент, если змейка не выросла."""
@@ -378,9 +378,9 @@ def main():
     """
     # Инициализация PyGame:
     pygame.init()
-    # Тут нужно создать экземпляры классов.
-    apple = Apple()
-    snake = Snake(apple)
+    snake = Snake()
+    apple = Apple(snake)
+    snake.apple = apple
     running = True
     while running:
         clock.tick(SPEED)
@@ -389,8 +389,6 @@ def main():
         snake.draw()
         running = snake.reset()
         pygame.display.update()
-        # Тут опишите основную логику игры.
-        # ...
         snake.update_direction()
         snake.move()
         snake.reset()
