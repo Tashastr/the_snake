@@ -144,7 +144,7 @@ class Snake(GameObject):
         self.positions = [(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)]
         self.direction = DOWN
         self.next_direction = None
-        self.body_color = (0, 255, 0)
+        self.body_color = SNAKE_COLOR
         self.last = None
         
         
@@ -387,7 +387,6 @@ def main():
         handle_keys(snake)
         apple.draw()
         snake.draw()
-        running = snake.reset()
         pygame.display.update()
         snake.update_direction()
         snake.move()
