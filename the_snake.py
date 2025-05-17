@@ -299,7 +299,7 @@ class Snake(GameObject):
             screen.fill(BOARD_BACKGROUND_COLOR)
             self.length = 1
             self.positions = [(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)]
-            self.direction = choice([DOWN, UP, LEFT, RIGHT])
+            self.direction = choice((DOWN, UP, LEFT, RIGHT))
         else:
             return True
 
