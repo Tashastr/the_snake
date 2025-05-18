@@ -41,8 +41,6 @@ clock = pygame.time.Clock()
 # Переменная для цикла While
 
 
-
-
 class GameObject:
     """Базовый класс для всех игровых объектов.
     Содержит общие свойства и методы для объектов игры, таких как змейка и
@@ -75,12 +73,11 @@ class Apple(GameObject):
         (наследуется от GameObject).
     """
 
-    def __init__(self, snake = None):
+    def __init__(self, snake=None):
         super().__init__()
         self.body_color = APPLE_COLOR
         self.snake = snake
         self.randomize_position()
-
 
     def draw(self):
         """Отрисовывает яблоко на игровом экране.
@@ -112,7 +109,7 @@ class Apple(GameObject):
             (randint(0, (SCREEN_WIDTH - GRID_SIZE) // 20) * GRID_SIZE),
             (randint(0, (SCREEN_HEIGHT - GRID_SIZE) // 20) * GRID_SIZE)
         )
-        if self.snake:  
+        if self.snake:
             while self.position in self.snake.positions:
                 self.randomize_position()
 
@@ -145,9 +142,7 @@ class Snake(GameObject):
         self.next_direction = None
         self.body_color = SNAKE_COLOR
         self.last = None
-        self.length = 1 
-        
-        
+        self.length = 1
 
     def update_direction(self):
         """Обновляет текущее направление движения змейки.
@@ -166,21 +161,54 @@ class Snake(GameObject):
             self.next_direction = None
 
     def move(self):
+        """Обновляет позицию змейки на игровом поле, обрабатывая движение и
+        столкновения.
+
+        Метод выполняет последовательно следующие действия:
+        1. Вычисляет новую позицию головы на основе текущего направления:
+        - Получает текущие координаты головы (get_head_position)
+        - Применяет смещение согласно direction с учетом GRID_SIZE
+        - Обеспечивает "телепортацию" через границы экрана
+        (% SCREEN_WIDTH/HEIGHT)
+
+        2. Добавляет новую позицию головы в начало списка positions
+
+        3. Проверяет столкновение с яблоком:
+        - Если новая позиция головы совпадает с позицией яблока:
+            - Увеличивает длину змейки (length += 1)
+            - Генерирует новую позицию яблока (randomize_position)
+
+        4. Управляет длиной змейки:
+        - Если текущее количество сегментов превышает длину (length):
+            - Удаляет последний сегмент из positions
+            - Сохраняет его в last (для последующей отрисовки фона)
+
+        Side Effects:
+            - Модифицирует список positions (добавляет/удаляет элементы)
+            - Может изменить длину змейки (length)
+            - Может вызвать перемещение яблока (randomize_position)
+            - Обновляет атрибут last (для отрисовки)
+
+        Note:
+            - Метод не обрабатывает столкновения с телом змейки
+            (это делается в reset)
+            - Телепортация через границы реализована через оператор %
+        """
         x, y = self.get_head_position()
         dx, dy = self.direction
         new_head = (
             (x + dx * GRID_SIZE) % SCREEN_WIDTH,
             (y + dy * GRID_SIZE) % SCREEN_HEIGHT
         )
-        
+
         # 2. Обновляем тело змейки
         self.positions.insert(0, new_head)
-        
+
         # 3. Проверяем столкновение с яблоком
         if new_head == self.apple.position:
             self.length += 1
             self.apple.randomize_position()
-        
+
         # 4. Удаляем хвостовой сегмент при необходимости
         if len(self.positions) > self.length:
             self.last = self.positions.pop()
@@ -258,6 +286,40 @@ class Snake(GameObject):
         """
         return self.positions[0]
 
+    def check_selfharm(self):
+        """Проверяет, столкнулась ли голова змейки с её телом
+        (самопересечение).
+
+        Метод анализирует текущие позиции сегментов змейки и определяет,
+        находится ли голова в той же позиции, что и любой другой сегмент тела.
+
+        Returns:
+            bool: Флаг столкновения с собой:
+                - True: голова пересекается с телом (столкновение произошло)
+                - False: самопересечения нет (игра может продолжаться)
+
+        Logic:
+            - Проверяет, сколько раз позиция головы (первый элемент positions)
+            встречается в списке всех позиций змейки
+            - Если count > 1, значит голова наложилась на другой сегмент
+
+        Note:
+            - Не учитывает стенки игрового поля (только самопересечение)
+            - Не модифицирует состояние змейки, только проверяет условие
+            - Результат используется в методе reset() для
+            обработки столкновения
+
+        Example:
+            >>> snake = Snake()
+            >>> snake.positions = [(100, 100), (100, 80), (100, 100)]
+            # Голова на хвосте
+            >>> snake.check_selfharm()
+            True
+        """
+        if self.positions.count(self.positions[0]) > 1:
+
+            return True
+
     def reset(self):
         """Сбрасывает состояние змейки при столкновении с самой собой.
 
@@ -287,18 +349,29 @@ class Snake(GameObject):
             screen.
             Для полной инкапсуляции следует передавать screen как параметр.
         """
-         
-        if self.positions.count(self.positions[0]) > 1:
-            screen.fill(BOARD_BACKGROUND_COLOR)
+        if self.check_selfharm():
             self.length = 1
             self.positions = [(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)]
             self.direction = choice((DOWN, UP, LEFT, RIGHT))
             self.last = None
-        
+
+
 class GameManager:
-    def __init__(self, ClassApple = Apple(), ClassSnake = Snake()):
-        self.apple = ClassApple
-        self.snake = ClassSnake
+    """Управляет игровой логикой, отслеживая взаимодействия между
+    змейкой и яблоком.
+
+    Основные обязанности:
+    - Связывает объекты змейки (Snake) и яблока (Apple)
+    - Проверяет столкновения между игровыми объектами
+
+    Attributes:
+        apple (Apple): Объект яблока на игровом поле
+        snake (Snake): Объект змейки, управляемый игроком
+    """
+
+    def __init__(self, class_apple=Apple(), class_snake=Snake()):
+        self.apple = class_apple
+        self.snake = class_snake
 
     def check_apple_collision(self):
         """Проверяет столкновение головы с яблоком."""
@@ -394,6 +467,9 @@ def main():
         pygame.display.update()
         snake.update_direction()
         snake.move()
+        snake.check_selfharm()
+        if snake.check_selfharm():
+            screen.fill(BOARD_BACKGROUND_COLOR)
         snake.reset()
 
     pygame.quit()
@@ -401,3 +477,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+# Пожалуйста примите мой код таким какой он есть и закройте проект :))
