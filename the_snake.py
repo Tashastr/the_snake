@@ -140,12 +140,12 @@ class Snake(GameObject):
 
     def __init__(self):
         super().__init__()
-        self.length = 1
         self.positions = [(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)]
         self.direction = DOWN
         self.next_direction = None
         self.body_color = SNAKE_COLOR
         self.last = None
+        self.length = 1 
         
         
 
@@ -166,32 +166,24 @@ class Snake(GameObject):
             self.next_direction = None
 
     def move(self):
-        """Перемещает змейку в текущем направлении."""
-        new_head = self.calculate_new_head_position()
-        self.update_snake_body(new_head)
-
-    def calculate_new_head_position(self):
-        """Вычисляет новую позицию головы с учётом границ экрана."""
         x, y = self.get_head_position()
         dx, dy = self.direction
-
-        new_x = (x + dx * GRID_SIZE) % SCREEN_WIDTH
-        new_y = (y + dy * GRID_SIZE) % SCREEN_HEIGHT
-
-        return (new_x, new_y)
-
-    def update_snake_body(self, new_head):
-        """Обновляет тело змейки после перемещения."""
+        new_head = (
+            (x + dx * GRID_SIZE) % SCREEN_WIDTH,
+            (y + dy * GRID_SIZE) % SCREEN_HEIGHT
+        )
+        
+        # 2. Обновляем тело змейки
         self.positions.insert(0, new_head)
-
-        if self.check_apple_collision(new_head):
-            self.handle_apple_collision()
-
-        self.trim_tail_if_needed()
-
-    def check_apple_collision(self, position):
-        """Проверяет столкновение головы с яблоком."""
-        return position == self.apple.position
+        
+        # 3. Проверяем столкновение с яблоком
+        if new_head == self.apple.position:
+            self.length += 1
+            self.apple.randomize_position()
+        
+        # 4. Удаляем хвостовой сегмент при необходимости
+        if len(self.positions) > self.length:
+            self.last = self.positions.pop()
 
     def handle_apple_collision(self):
         """Обрабатывает поедание яблока."""
@@ -295,13 +287,22 @@ class Snake(GameObject):
             screen.
             Для полной инкапсуляции следует передавать screen как параметр.
         """
+         
         if self.positions.count(self.positions[0]) > 1:
             screen.fill(BOARD_BACKGROUND_COLOR)
             self.length = 1
             self.positions = [(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)]
             self.direction = choice((DOWN, UP, LEFT, RIGHT))
-        else:
-            return True
+            self.last = None
+        
+class GameManager:
+    def __init__(self, ClassApple = Apple(), ClassSnake = Snake()):
+        self.apple = ClassApple
+        self.snake = ClassSnake
+
+    def check_apple_collision(self):
+        """Проверяет столкновение головы с яблоком."""
+        return self.snake.position == self.apple.position
 
 
 def handle_keys(game_object):
@@ -381,6 +382,7 @@ def main():
     pygame.init()
     snake = Snake()
     apple = Apple(snake)
+    game_manager = GameManager(apple, snake)
     snake.apple = apple
     running = True
     while running:
@@ -388,6 +390,7 @@ def main():
         handle_keys(snake)
         apple.draw()
         snake.draw()
+        game_manager.check_apple_collision()
         pygame.display.update()
         snake.update_direction()
         snake.move()
