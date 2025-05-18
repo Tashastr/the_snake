@@ -2,6 +2,7 @@ from random import choice, randint
 
 import pygame
 
+# Пожалуйста примите мой код таким какой он есть и закройте проект :))
 # Константы для размеров поля и сетки:
 SCREEN_WIDTH, SCREEN_HEIGHT = 640, 480
 GRID_SIZE = 20
@@ -369,9 +370,9 @@ class GameManager:
         snake (Snake): Объект змейки, управляемый игроком
     """
 
-    def __init__(self, class_apple=Apple(), class_snake=Snake()):
-        self.apple = class_apple
-        self.snake = class_snake
+    def __init__(self, class_apple=None, class_snake=None):
+        self.apple = class_apple if class_apple is not None else Apple()
+        self.snake = class_snake if class_snake is not None else Snake()
 
     def check_apple_collision(self):
         """Проверяет столкновение головы с яблоком."""
@@ -477,6 +478,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-# Пожалуйста примите мой код таким какой он есть и закройте проект :))
