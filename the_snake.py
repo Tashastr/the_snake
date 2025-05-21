@@ -51,7 +51,6 @@ class GameObject:
 
     def draw(self):
         """Отрисовывает объект на экране."""
-        pass
 
 
 class Apple(GameObject):
@@ -60,8 +59,7 @@ class Apple(GameObject):
     def __init__(self, snake_positions=None):
         super().__init__()
         self.body_color = APPLE_COLOR
-        self.snake_positions = snake_positions if snake_positions else []
-        self.randomize_position()
+        self.randomize_position(snake_positions)
 
     def draw(self):
         """Отрисовывает яблоко на игровом экране."""
@@ -69,14 +67,16 @@ class Apple(GameObject):
         pygame.draw.rect(screen, self.body_color, rect)
         pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
 
-    def randomize_position(self):
+    def randomize_position(self, snake_positions=None):
         """Устанавливает случайную позицию яблока на игровом поле."""
+        if snake_positions is None:
+            snake_positions = []
         while True:
             self.position = (
                 randint(0, GRID_WIDTH - 1) * GRID_SIZE,
                 randint(0, GRID_HEIGHT - 1) * GRID_SIZE
             )
-            if self.position not in self.snake_positions:
+            if self.position not in snake_positions:
                 break
 
 
@@ -165,15 +165,14 @@ def main():
     snake = Snake()
     apple = Apple(snake.positions)
 
-    running = True
-    while running:
+    while True:
         clock.tick(SPEED)
         handle_keys(snake)
 
         # Проверка столкновения с яблоком
         if snake.get_head_position() == apple.position:
             snake.length += 1
-            apple.randomize_position()
+            apple.randomize_position(snake.positions)
 
         # Проверка самопересечения
         if snake.check_selfharm():
